@@ -723,7 +723,7 @@ private fun MoreRow(
 private fun MoreInformationPage(page: MorePage, onBack: () -> Unit) {
     val sections = when (page) {
         MorePage.ABOUT -> listOf(
-            "OpenDash v${BuildConfig.VERSION_NAME}" to "Open-source navigation, ride management, dash wallpapers, media cards, and call controls for compatible Royal Enfield Tripper displays.",
+            "OpenDash v${BuildConfig.VERSION_NAME}" to "Open-source navigation, ride management, dash wallpapers, media cards, and call controls for compatible Tripper displays.",
             "Privacy" to "OpenDash works locally by default. Dash credentials use encrypted preferences and wallpaper media stays in app-private storage.",
         )
         MorePage.HELP -> listOf(
@@ -733,7 +733,7 @@ private fun MoreInformationPage(page: MorePage, onBack: () -> Unit) {
             "Media and calls" to "Grant notification access for now-playing and caller cards. Grant call-control permission separately to answer with UP and reject or end with DOWN.",
         )
         MorePage.TERMS -> listOf(
-            "Independent project" to "OpenDash is not affiliated with, endorsed by, or supported by Royal Enfield. The Tripper protocol is unofficial and reverse-engineered.",
+            "Independent project" to "OpenDash is independent and community-built. The Tripper protocol is unofficial and reverse-engineered.",
             "Ride responsibly" to "Configure the app before riding. Do not interact with the phone in motion, and always follow local laws and road conditions.",
             "No warranty" to "The software is provided without warranty. Compatibility can vary by Android device, vehicle firmware, and connected applications.",
         )

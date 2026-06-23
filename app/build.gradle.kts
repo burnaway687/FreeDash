@@ -1,4 +1,5 @@
 import java.util.Properties
+import java.io.FileInputStream
 
 plugins {
     alias(libs.plugins.android.application)
@@ -19,6 +20,13 @@ val localProperties = Properties().apply {
 }
 val googleWebClientId = providers.gradleProperty("GOOGLE_WEB_CLIENT_ID").orNull
     ?: localProperties.getProperty("GOOGLE_WEB_CLIENT_ID").orEmpty()
+
+val keystoreProperties = Properties()
+val keystorePropertiesFile = rootProject.file("key.properties")
+
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+}
 
 android {
     namespace = "com.example.opendash"
@@ -45,9 +53,17 @@ android {
     }
 
     val releaseStoreFilePath = providers.gradleProperty("OPENDASH_RELEASE_STORE_FILE").orNull
+        ?: localProperties.getProperty("OPENDASH_RELEASE_STORE_FILE")
+        ?: keystoreProperties.getProperty("storeFile")
     val releaseStorePassword = providers.gradleProperty("OPENDASH_RELEASE_STORE_PASSWORD").orNull
+        ?: localProperties.getProperty("OPENDASH_RELEASE_STORE_PASSWORD")
+        ?: keystoreProperties.getProperty("storePassword")
     val releaseKeyAlias = providers.gradleProperty("OPENDASH_RELEASE_KEY_ALIAS").orNull
+        ?: localProperties.getProperty("OPENDASH_RELEASE_KEY_ALIAS")
+        ?: keystoreProperties.getProperty("keyAlias")
     val releaseKeyPassword = providers.gradleProperty("OPENDASH_RELEASE_KEY_PASSWORD").orNull
+        ?: localProperties.getProperty("OPENDASH_RELEASE_KEY_PASSWORD")
+        ?: keystoreProperties.getProperty("keyPassword")
     val hasReleaseKeystore =
         !releaseStoreFilePath.isNullOrBlank() &&
             !releaseStorePassword.isNullOrBlank() &&

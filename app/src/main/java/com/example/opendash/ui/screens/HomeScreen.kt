@@ -87,7 +87,7 @@ fun HomeScreen(
                 Spacer(Modifier.width(18.dp))
 
                 Column(Modifier.weight(1f)) {
-                    Eyebrow("Royal Enfield · Tripper")
+                    Eyebrow("Compatible Tripper Dash")
 
                     Spacer(Modifier.height(7.dp))
 

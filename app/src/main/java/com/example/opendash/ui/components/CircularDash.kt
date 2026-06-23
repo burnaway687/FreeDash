@@ -23,7 +23,7 @@ import kotlin.math.*
 
 /**
  * Circular Tripper Dash viewport — the signature element.
- * Mirrors the Royal Enfield Tripper round TFT display.
+ * Mirrors the compatible Tripper round TFT display.
  *
  * @param size      Diameter of the circle
  * @param pan       Map pan offset (±46 units)
