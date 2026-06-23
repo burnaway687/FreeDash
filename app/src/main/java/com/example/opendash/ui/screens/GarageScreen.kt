@@ -81,7 +81,7 @@ fun GarageScreen(
             Eyebrow("Active vehicle")
             Text(
                 ui.activeVehicleName,
-                color = TextHi,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.SemiBold,
                 fontFamily = GeistFamily,
@@ -89,7 +89,7 @@ fun GarageScreen(
             )
             Text(
                 "${"%,d".format(ui.odometerKm)} km on odometer",
-                color = TextMid,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 13.sp,
                 modifier = Modifier.padding(top = 2.dp),
             )
@@ -182,42 +182,42 @@ private fun MileageSummary(avgKmpl: Double?) {
 @Composable
 private fun GarageSectionHeader(title: String, subtitle: String) {
     Column(Modifier.padding(top = 22.dp, bottom = 10.dp, start = 2.dp, end = 2.dp)) {
-        Text(title, color = TextHi, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, fontFamily = GeistFamily)
-        Text(subtitle, color = TextLo, fontSize = 12.5.sp, modifier = Modifier.padding(top = 2.dp))
+        Text(title, color = MaterialTheme.colorScheme.onBackground, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, fontFamily = GeistFamily)
+        Text(subtitle, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.5.sp, modifier = Modifier.padding(top = 2.dp))
     }
 }
 
 @Composable
 private fun MaintenanceTab(ui: GarageUi, onSelect: (MaintRow) -> Unit, onLog: () -> Unit, onAdd: () -> Unit) {
-    val toneColor = mapOf("ok" to Gold, "warn" to Warn, "alert" to Alert)
+    val toneColor = mapOf("ok" to MaterialTheme.colorScheme.primary, "warn" to Warn, "alert" to MaterialTheme.colorScheme.error)
 
     Eyebrow("Service intervals", Modifier.padding(bottom = 8.dp, start = 4.dp))
 
     OpenDashCard(modifier = Modifier.fillMaxWidth(), padding = 6.dp) {
         if (ui.maint.isEmpty()) {
-            Text("No intervals yet — add one below.", color = TextLo, fontSize = 13.sp, modifier = Modifier.padding(14.dp))
+            Text("No intervals yet — add one below.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp, modifier = Modifier.padding(14.dp))
         }
         ui.maint.forEachIndexed { i, row ->
             if (i > 0) OpenDashDivider(Modifier.padding(horizontal = 4.dp))
-            val color = toneColor[row.tone] ?: Gold
+            val color = toneColor[row.tone] ?: MaterialTheme.colorScheme.primary
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth().clickable { onSelect(row) }.padding(horizontal = 6.dp, vertical = 12.dp),
             ) {
-                Box(contentAlignment = Alignment.Center, modifier = Modifier.size(40.dp).clip(RoundedCornerShape(11.dp)).background(Surf2).border(1.dp, Line, RoundedCornerShape(11.dp))) {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.size(40.dp).clip(RoundedCornerShape(11.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh).border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(11.dp))) {
                     Icon(iconFor(row.item.iconKey), null, tint = color, modifier = Modifier.size(20.dp))
                 }
                 Spacer(Modifier.width(13.dp))
                 Column(Modifier.weight(1f)) {
-                    Text(row.item.name, color = TextHi, fontSize = 14.5.sp, fontWeight = FontWeight.SemiBold, fontFamily = GeistFamily)
-                    Text("Last · ${"%,d".format(row.item.lastDoneOdoKm)} km", color = TextLo, fontSize = 12.sp, modifier = Modifier.padding(top = 2.dp))
+                    Text(row.item.name, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.5.sp, fontWeight = FontWeight.SemiBold, fontFamily = GeistFamily)
+                    Text("Last · ${"%,d".format(row.item.lastDoneOdoKm)} km", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp, modifier = Modifier.padding(top = 2.dp))
                 }
                 Column(horizontalAlignment = Alignment.End) {
                     Text(dueText(row), color = color, fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold, fontFamily = GeistMonoFamily)
                     row.remainingDays?.let { days ->
                         Text(
                             "or ${days.coerceAtLeast(0)} days",
-                            color = TextLo,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 11.sp,
                             modifier = Modifier.padding(top = 2.dp),
                         )
@@ -247,9 +247,9 @@ private fun SparePartDetailsSheet(
     val parsedInterval = interval.toIntOrNull()
     val distanceUsed = (odometerKm - row.item.lastDoneOdoKm).coerceAtLeast(0)
     val status = when (row.tone) { "alert" -> "Overdue"; "warn" -> "Due soon"; else -> "Good" }
-    val statusColor = when (row.tone) { "alert" -> Alert; "warn" -> Warn; else -> Gold }
+    val statusColor = when (row.tone) { "alert" -> MaterialTheme.colorScheme.error; "warn" -> Warn; else -> MaterialTheme.colorScheme.primary }
 
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Surf1) {
+    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surfaceContainer) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -262,7 +262,7 @@ private fun SparePartDetailsSheet(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     row.item.name,
-                    color = TextHi,
+                    color = MaterialTheme.colorScheme.onSurface,
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f),
@@ -303,27 +303,27 @@ private fun SparePartDetailsSheet(
             Text(
                 row.officialSchedule?.guidance
                     ?: "Adjust the service interval for your riding style, terrain, and usage.",
-                color = TextMid,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 12.5.sp,
                 modifier = Modifier.fillMaxWidth().padding(top = 12.dp)
-                    .clip(RoundedCornerShape(12.dp)).background(Surf2).padding(12.dp),
+                    .clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh).padding(12.dp),
             )
             row.officialSchedule?.let { official ->
                 Text(
                     "Official source: ${official.manualPages}. Schedule is whichever comes earlier; shorten it for severe or dusty conditions.",
-                    color = TextLo,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 11.5.sp,
                     modifier = Modifier.padding(top = 10.dp),
                 )
             }
 
             Spacer(Modifier.height(22.dp))
-            Text("History", color = TextHi, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+            Text("History", color = MaterialTheme.colorScheme.onSurface, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
             Row(modifier = Modifier.padding(top = 14.dp, start = 4.dp), verticalAlignment = Alignment.Top) {
-                Box(Modifier.padding(top = 6.dp).size(10.dp).clip(CircleShape).background(Gold))
+                Box(Modifier.padding(top = 6.dp).size(10.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary))
                 Column(Modifier.padding(start = 14.dp)) {
-                    Text(dfHistory.format(Date(row.item.lastDoneDateMs)), color = TextMid, fontSize = 13.sp)
-                    Text("${"%,d".format(row.item.lastDoneOdoKm)} km", color = TextLo, fontSize = 13.sp, modifier = Modifier.padding(top = 3.dp))
+                    Text(dfHistory.format(Date(row.item.lastDoneDateMs)), color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp)
+                    Text("${"%,d".format(row.item.lastDoneOdoKm)} km", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp, modifier = Modifier.padding(top = 3.dp))
                 }
             }
 
@@ -342,8 +342,8 @@ private fun SparePartDetailsSheet(
 @Composable
 private fun PartMetric(label: String, value: String, modifier: Modifier = Modifier) {
     Column(modifier) {
-        Text(label, color = TextLo, fontSize = 12.sp)
-        Text(value, color = TextHi, fontSize = 17.sp, modifier = Modifier.padding(top = 4.dp))
+        Text(label, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+        Text(value, color = MaterialTheme.colorScheme.onSurface, fontSize = 17.sp, modifier = Modifier.padding(top = 4.dp))
     }
 }
 
@@ -358,9 +358,9 @@ private fun AddServiceDialog(onAdd: (String, String, Int) -> Unit, onDismiss: ()
     val valid = name.isNotBlank() && interval.toIntOrNull() != null && interval.toInt() > 0
     AlertDialog(
         onDismissRequest = onDismiss,
-        confirmButton = { TextButton(enabled = valid, onClick = { onAdd(name.trim(), icon, interval.toInt()) }) { Text("Add", color = if (valid) Gold else TextLo) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel", color = TextMid) } },
-        title = { Text("Add interval", color = TextHi) },
+        confirmButton = { TextButton(enabled = valid, onClick = { onAdd(name.trim(), icon, interval.toInt()) }) { Text("Add", color = if (valid) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant) } },
+        title = { Text("Add interval", color = MaterialTheme.colorScheme.onSurface) },
         text = {
             Column {
                 OutlinedTextField(name, { name = it }, label = { Text("Name") }, singleLine = true, modifier = Modifier.fillMaxWidth())
@@ -372,15 +372,15 @@ private fun AddServiceDialog(onAdd: (String, String, Int) -> Unit, onDismiss: ()
                         Box(
                             contentAlignment = Alignment.Center,
                             modifier = Modifier.size(38.dp).clip(RoundedCornerShape(16.dp))
-                                .background(if (key == icon) GoldTint else Surf2)
-                                .border(1.dp, if (key == icon) Gold else Line, RoundedCornerShape(16.dp))
+                                .background(if (key == icon) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh)
+                                .border(1.dp, if (key == icon) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(16.dp))
                                 .clickable { icon = key },
-                        ) { Icon(iconFor(key), null, tint = if (key == icon) Gold else TextMid, modifier = Modifier.size(18.dp)) }
+                        ) { Icon(iconFor(key), null, tint = if (key == icon) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp)) }
                     }
                 }
             }
         },
-        containerColor = Surf1,
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
     )
 }
 
@@ -388,24 +388,24 @@ private fun AddServiceDialog(onAdd: (String, String, Int) -> Unit, onDismiss: ()
 private fun LogServiceDialog(rows: List<MaintRow>, odo: Int, onMark: (MaintenanceItem) -> Unit, onDelete: (MaintenanceItem) -> Unit, onAddNew: () -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        confirmButton = { TextButton(onClick = onAddNew) { Text("Add interval", color = Gold) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Close", color = TextMid) } },
-        title = { Text("Mark a service done", color = TextHi) },
+        confirmButton = { TextButton(onClick = onAddNew) { Text("Add interval", color = MaterialTheme.colorScheme.primary) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Close", color = MaterialTheme.colorScheme.onSurfaceVariant) } },
+        title = { Text("Mark a service done", color = MaterialTheme.colorScheme.onSurface) },
         text = {
             Column {
-                Text("Marks the item done at ${"%,d".format(odo)} km.", color = TextLo, fontSize = 12.sp, modifier = Modifier.padding(bottom = 8.dp))
+                Text("Marks the item done at ${"%,d".format(odo)} km.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp, modifier = Modifier.padding(bottom = 8.dp))
                 rows.forEach { row ->
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp)) {
-                        Icon(iconFor(row.item.iconKey), null, tint = TextMid, modifier = Modifier.size(18.dp))
+                        Icon(iconFor(row.item.iconKey), null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(10.dp))
-                        Text(row.item.name, color = TextHi, fontSize = 13.5.sp, modifier = Modifier.weight(1f))
-                        TextButton(onClick = { onMark(row.item) }) { Text("Done", color = Gold, fontSize = 13.sp) }
-                        Icon(OpenDashIcons.Cross, "delete", tint = TextLo, modifier = Modifier.size(16.dp).clickable { onDelete(row.item) })
+                        Text(row.item.name, color = MaterialTheme.colorScheme.onSurface, fontSize = 13.5.sp, modifier = Modifier.weight(1f))
+                        TextButton(onClick = { onMark(row.item) }) { Text("Done", color = MaterialTheme.colorScheme.primary, fontSize = 13.sp) }
+                        Icon(OpenDashIcons.Cross, "delete", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp).clickable { onDelete(row.item) })
                     }
                 }
             }
         },
-        containerColor = Surf1,
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
     )
 }
 
@@ -415,11 +415,11 @@ private fun OdometerDialog(current: Int, onSet: (Int) -> Unit, onDismiss: () -> 
     val valid = odo.toIntOrNull() != null
     AlertDialog(
         onDismissRequest = onDismiss,
-        confirmButton = { TextButton(enabled = valid, onClick = { onSet(odo.toInt()) }) { Text("Save", color = if (valid) Gold else TextLo) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel", color = TextMid) } },
-        title = { Text("Set odometer", color = TextHi) },
+        confirmButton = { TextButton(enabled = valid, onClick = { onSet(odo.toInt()) }) { Text("Save", color = if (valid) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant) } },
+        title = { Text("Set odometer", color = MaterialTheme.colorScheme.onSurface) },
         text = { NumField(odo, { odo = it }, "Odometer (km)", false) },
-        containerColor = Surf1,
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
     )
 }
 

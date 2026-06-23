@@ -743,8 +743,21 @@ private fun MoreInformationPage(page: MorePage, onBack: () -> Unit) {
             "Source" to "github.com/subtlesayak/open-dash",
         )
         MorePage.CHANGELOG -> listOf(
-            "1.3 stable" to "Material 3 Expressive refresh, app-wide motorcycle themes, active vehicle selection, redesigned Garage, spare-part service logging, safer fuel entry handling, month-aware expense sharing, capped dash wallpaper video decoding, and smoother navigation.",
-            "Protocol safety" to "Dash handshake, authentication, RTP, UDP, and protocol packet behavior remain unchanged.",
+            "1.3 stable" to listOf(
+                "Material 3 Expressive UI refresh across the app.",
+                "Added Dynamic Wallpaper theming as the first theme option.",
+                "Added Auto Day/Night black-and-white theme as the second theme option.",
+                "Kept motorcycle theme palettes available after the dynamic and auto modes.",
+                "Improved app-wide theme contrast so Garage, dialogs, cards, buttons, and spare-part rows stay readable across light, dynamic, and motorcycle themes.",
+                "Active vehicle selection with vehicle-specific garage and expense data.",
+                "New expenses now default to the current selected vehicle without an editable vehicle field.",
+                "Redesigned Garage with editable odometer and average mileage from the latest five fill-ups.",
+                "Spare-part details, interval editing, history, and service logging.",
+                "Fuel entries no longer delete when tapped.",
+                "Monthly and all-time expense filtering and sharing.",
+                "Dash wallpaper video decoding capped at 8 FPS.",
+                "Improved navigation transitions and general UI fixes.",
+            ).joinToString("\n") { "- $it" },
         )
         else -> emptyList()
     }

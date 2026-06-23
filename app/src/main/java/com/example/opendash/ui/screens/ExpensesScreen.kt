@@ -220,7 +220,7 @@ private fun AddExpenseScreenDialog(
     var date by remember { mutableStateOf(dfExpense.format(Date())) }
     var time by remember { mutableStateOf(dfExpenseTime.format(Date())) }
     var amount by remember { mutableStateOf("") }
-    var vehicle by remember(vehicleName) { mutableStateOf(vehicleName) }
+    val vehicle = vehicleName
     var odometer by remember { mutableStateOf("") }
     var fuelQty by remember { mutableStateOf("") }
     var fullTank by remember { mutableStateOf(false) }
@@ -297,7 +297,18 @@ private fun AddExpenseScreenDialog(
                             size = BtnSize.Sm,
                         )
                     }
-                    ExpenseField(vehicle, { vehicle = it }, "Motorcycle")
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(MaterialTheme.colorScheme.surfaceContainer)
+                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(16.dp))
+                            .padding(horizontal = 14.dp, vertical = 12.dp),
+                    ) {
+                        Text("Motorcycle", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+                        Text(vehicle, color = MaterialTheme.colorScheme.onSurface, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 3.dp))
+                    }
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
                         ExpenseField(odometer, { odometer = it }, "Odometer (km)", Modifier.weight(1f), KeyboardType.Number)
                         ExpenseField(fuelQty, { fuelQty = it }, "Fuel quantity", Modifier.weight(1f), KeyboardType.Decimal)

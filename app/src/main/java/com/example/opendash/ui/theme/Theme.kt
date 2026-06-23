@@ -1,6 +1,8 @@
 package com.example.opendash.ui.theme
 
 import android.content.Context
+import android.os.Build
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -8,6 +10,9 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialExpressiveTheme
 import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -52,6 +57,16 @@ data class OpenDashThemeVariant(
 }
 
 val OpenDashThemeVariants = listOf(
+    OpenDashThemeVariant(
+        name = "Dynamic Wallpaper",
+        theme = "Android wallpaper colours",
+        colors = listOf(0xFF101014, 0xFF2A2630, 0xFF625B71, 0xFF6750A4, 0xFFD0BCFF, 0xFFE6E1E5).map(::Color),
+    ),
+    OpenDashThemeVariant(
+        name = "Auto Day/Night",
+        theme = "System black and white",
+        colors = listOf(0xFF000000, 0xFF202124, 0xFF5F6368, 0xFF9AA0A6, 0xFFE8EAED, 0xFFFFFFFF).map(::Color),
+    ),
     OpenDashThemeVariant(
         name = "Mana Black",
         theme = "Monochrome camo / stealth grey",
@@ -107,6 +122,54 @@ object OpenDashThemeController {
     }
 }
 
+private fun autoDayNightColorScheme(dark: Boolean): ColorScheme = if (dark) {
+    darkColorScheme(
+        primary = Color.White,
+        onPrimary = Color.Black,
+        primaryContainer = Color(0xFF303134),
+        onPrimaryContainer = Color.White,
+        secondary = Color(0xFFBDC1C6),
+        onSecondary = Color.Black,
+        background = Color.Black,
+        onBackground = Color.White,
+        surface = Color(0xFF151515),
+        onSurface = Color.White,
+        surfaceContainerLow = Color(0xFF101010),
+        surfaceContainer = Color(0xFF1D1D1F),
+        surfaceContainerHigh = Color(0xFF262628),
+        surfaceContainerHighest = Color(0xFF303134),
+        onSurfaceVariant = Color(0xFFBDC1C6),
+        outline = Color.White.copy(alpha = 0.28f),
+        outlineVariant = Color.White.copy(alpha = 0.14f),
+        error = Alert,
+        errorContainer = Alert.copy(alpha = 0.16f),
+        onErrorContainer = Alert,
+    )
+} else {
+    lightColorScheme(
+        primary = Color.Black,
+        onPrimary = Color.White,
+        primaryContainer = Color(0xFFE8EAED),
+        onPrimaryContainer = Color.Black,
+        secondary = Color(0xFF3C4043),
+        onSecondary = Color.White,
+        background = Color.White,
+        onBackground = Color.Black,
+        surface = Color(0xFFF8F9FA),
+        onSurface = Color.Black,
+        surfaceContainerLow = Color(0xFFF8F9FA),
+        surfaceContainer = Color(0xFFF1F3F4),
+        surfaceContainerHigh = Color(0xFFE8EAED),
+        surfaceContainerHighest = Color(0xFFDADCE0),
+        onSurfaceVariant = Color(0xFF3C4043),
+        outline = Color.Black.copy(alpha = 0.26f),
+        outlineVariant = Color.Black.copy(alpha = 0.13f),
+        error = Alert,
+        errorContainer = Alert.copy(alpha = 0.16f),
+        onErrorContainer = Alert,
+    )
+}
+
 private fun openDashColorScheme(variant: OpenDashThemeVariant): ColorScheme = darkColorScheme(
     primary            = variant.accentStrong,
     onPrimary          = variant.background,
@@ -149,8 +212,18 @@ fun OpenDashTheme(content: @Composable () -> Unit) {
         true
     }
     val variant by OpenDashThemeController.variant.collectAsState()
+    val systemDark = isSystemInDarkTheme()
+    val colorScheme = when (variant.name) {
+        "Dynamic Wallpaper" -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (systemDark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+        } else {
+            autoDayNightColorScheme(systemDark)
+        }
+        "Auto Day/Night" -> autoDayNightColorScheme(systemDark)
+        else -> openDashColorScheme(variant)
+    }
     MaterialExpressiveTheme(
-        colorScheme = openDashColorScheme(variant),
+        colorScheme = colorScheme,
         typography = Typography,
         motionScheme = MotionScheme.expressive(),
         content = content,
