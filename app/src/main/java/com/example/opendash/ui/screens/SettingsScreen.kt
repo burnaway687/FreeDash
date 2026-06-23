@@ -5,6 +5,7 @@ import android.graphics.ImageDecoder
 import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.os.Build
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -65,6 +66,16 @@ import com.example.opendash.data.DashWallpaperPaths
 import com.example.opendash.viewmodel.AuthViewModel
 import com.example.opendash.viewmodel.ConnectionState
 import com.example.opendash.viewmodel.DashViewModel
+
+private enum class MorePage(val title: String) {
+    ROOT("More"),
+    SETTINGS("Settings"),
+    ABOUT("About"),
+    HELP("Help"),
+    TERMS("Terms & Conditions"),
+    LICENSE("License"),
+    CHANGELOG("Changelog"),
+}
 
 @Composable
 fun SettingsScreen(
@@ -155,6 +166,13 @@ fun SettingsScreen(
         com.example.opendash.dash.nav.VoiceMode.FULL  -> "Full TTS"
     }
     var updateMessage by remember { mutableStateOf<String?>(null) }
+    var page by remember { mutableStateOf(MorePage.ROOT) }
+    BackHandler(enabled = page != MorePage.ROOT) { page = MorePage.ROOT }
+
+    if (page != MorePage.ROOT && page != MorePage.SETTINGS) {
+        MoreInformationPage(page = page, onBack = { page = MorePage.ROOT })
+        return
+    }
 
     Column(
         modifier = Modifier
@@ -168,47 +186,59 @@ fun SettingsScreen(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth().padding(bottom = 22.dp, top = 10.dp),
         ) {
+            if (page == MorePage.SETTINGS) {
+                OpenDashIconBtn(
+                    icon = OpenDashIcons.ChevronLeft,
+                    onClick = { page = MorePage.ROOT },
+                    modifier = Modifier.padding(end = 10.dp),
+                )
+            }
             Text(
-                "Settings",
+                page.title,
                 color = MaterialTheme.colorScheme.onBackground,
                 fontSize = 26.sp,
                 fontWeight = FontWeight.Medium,
                 fontFamily = GeistFamily,
                 modifier = Modifier.weight(1f),
             )
-            Icon(OpenDashIcons.Search, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(26.dp))
+            if (page == MorePage.ROOT) {
+                Icon(OpenDashIcons.Search, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(26.dp))
+            }
         }
 
-        SettingsGroup(padding = 6.dp) {
-            MoreRow(
-                OpenDashIcons.Sync,
-                "Update from GitHub",
-                updateMessage ?: "Check the latest OpenDash release",
-                last = true,
-                control = {
-                    OpenDashBtn(
-                        "Check",
-                        onClick = { updateMessage = "OpenDash ${BuildConfig.VERSION_NAME} is installed. Check GitHub Releases for newer builds." },
-                        variant = BtnVariant.Secondary,
-                        size = BtnSize.Sm,
-                    )
-                },
-            )
-        }
+        if (page == MorePage.ROOT) {
+            SettingsGroup(padding = 6.dp) {
+                MoreRow(
+                    OpenDashIcons.Sync,
+                    "Update from GitHub",
+                    updateMessage ?: "Check the latest OpenDash release",
+                    last = true,
+                    control = {
+                        OpenDashBtn(
+                            "Check",
+                            onClick = { updateMessage = "OpenDash ${BuildConfig.VERSION_NAME} is installed. Check GitHub Releases for newer builds." },
+                            variant = BtnVariant.Secondary,
+                            size = BtnSize.Sm,
+                        )
+                    },
+                )
+            }
 
-        SectionLabel("General")
-        SettingsGroup(padding = 6.dp) {
-            MoreRow(OpenDashIcons.Gear, "Settings", "Connection, ride, wallpaper, voice, units")
-            SettingsDivider(Modifier.padding(horizontal = 6.dp))
-            MoreRow(OpenDashIcons.Dash, "About", "OpenDash v${BuildConfig.VERSION_NAME}")
-            SettingsDivider(Modifier.padding(horizontal = 6.dp))
-            MoreRow(OpenDashIcons.Bell, "Help", "Connection and dash wallpaper guidance")
-            SettingsDivider(Modifier.padding(horizontal = 6.dp))
-            MoreRow(OpenDashIcons.Lock, "Terms & Conditions", "Usage terms")
-            SettingsDivider(Modifier.padding(horizontal = 6.dp))
-            MoreRow(OpenDashIcons.Flag, "License", "Open source notices")
-            SettingsDivider(Modifier.padding(horizontal = 6.dp))
-            MoreRow(OpenDashIcons.Cal, "Changelog", "Beta 2: rides, media/calls, GPS stability, smaller APKs", last = true)
+            SectionLabel("General")
+            SettingsGroup(padding = 6.dp) {
+                MoreRow(OpenDashIcons.Gear, "Settings", "Connection, ride, wallpaper, voice, units", onClick = { page = MorePage.SETTINGS })
+                SettingsDivider(Modifier.padding(horizontal = 6.dp))
+                MoreRow(OpenDashIcons.Dash, "About", "OpenDash v${BuildConfig.VERSION_NAME}", onClick = { page = MorePage.ABOUT })
+                SettingsDivider(Modifier.padding(horizontal = 6.dp))
+                MoreRow(OpenDashIcons.Bell, "Help", "Connection and dash wallpaper guidance", onClick = { page = MorePage.HELP })
+                SettingsDivider(Modifier.padding(horizontal = 6.dp))
+                MoreRow(OpenDashIcons.Lock, "Terms & Conditions", "Usage terms", onClick = { page = MorePage.TERMS })
+                SettingsDivider(Modifier.padding(horizontal = 6.dp))
+                MoreRow(OpenDashIcons.Flag, "License", "Open source notices", onClick = { page = MorePage.LICENSE })
+                SettingsDivider(Modifier.padding(horizontal = 6.dp))
+                MoreRow(OpenDashIcons.Cal, "Changelog", "1.3 stable: expressive UI, themes, vehicles, garage", last = true, onClick = { page = MorePage.CHANGELOG })
+            }
+            return@Column
         }
 
         // Account card
@@ -314,10 +344,19 @@ fun SettingsScreen(
                     onDismissRequest = { themeMenuExpanded = false },
                     modifier = Modifier
                         .fillMaxWidth(0.94f)
-                        .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                        .background(MaterialTheme.colorScheme.surfaceContainerLow),
                 ) {
                     OpenDashThemeVariants.forEach { variant ->
                         DropdownMenuItem(
+                            modifier = Modifier
+                                .padding(horizontal = 7.dp, vertical = 4.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(MaterialTheme.colorScheme.surfaceContainer)
+                                .border(
+                                    1.dp,
+                                    if (selectedTheme.name == variant.name) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
+                                    RoundedCornerShape(16.dp),
+                                ),
                             text = {
                                 Column {
                                     Text(
@@ -391,7 +430,7 @@ fun SettingsScreen(
                         fontFamily = GeistFamily,
                     )
                     Text(
-                        "Up to 5 images, GIFs, or videos. Use joystick left/right while idle.",
+                        "Up to 5 images, GIFs, or videos. Videos are capped at 8 fps. Use joystick left/right while idle.",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 12.sp,
                         modifier = Modifier.padding(top = 2.dp),
@@ -623,8 +662,8 @@ private fun SettingsGroup(
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(14.dp),
-        color = MaterialTheme.colorScheme.surfaceContainer,
+        shape = RoundedCornerShape(24.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         shadowElevation = 0.dp,
     ) {
@@ -675,8 +714,57 @@ private fun MoreRow(
     control: @Composable () -> Unit = {
         Icon(OpenDashIcons.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
     },
+    onClick: (() -> Unit)? = null,
 ) {
-    SettingRow(icon = icon, title = title, sub = sub, control = control, last = last)
+    SettingRow(icon = icon, title = title, sub = sub, control = control, last = last, onClick = onClick)
+}
+
+@Composable
+private fun MoreInformationPage(page: MorePage, onBack: () -> Unit) {
+    val sections = when (page) {
+        MorePage.ABOUT -> listOf(
+            "OpenDash v${BuildConfig.VERSION_NAME}" to "Open-source navigation, ride management, dash wallpapers, media cards, and call controls for compatible Royal Enfield Tripper displays.",
+            "Privacy" to "OpenDash works locally by default. Dash credentials use encrypted preferences and wallpaper media stays in app-private storage.",
+        )
+        MorePage.HELP -> listOf(
+            "Connect to Tripper Dash" to "Turn on the bike, choose Connect to dash, select the RE_* network, and confirm the exact SSID before it is saved.",
+            "Navigation" to "Share a destination from Google Maps, review the route, start navigation, and connect the dash. Active navigation keeps its existing projection behavior.",
+            "Dash wallpaper" to "Add up to five images, GIFs, or MP4 videos. Video playback is capped at 8 fps. Crop with the display guide, then use joystick left/right while the dash is idle.",
+            "Media and calls" to "Grant notification access for now-playing and caller cards. Grant call-control permission separately to answer with UP and reject or end with DOWN.",
+        )
+        MorePage.TERMS -> listOf(
+            "Independent project" to "OpenDash is not affiliated with, endorsed by, or supported by Royal Enfield. The Tripper protocol is unofficial and reverse-engineered.",
+            "Ride responsibly" to "Configure the app before riding. Do not interact with the phone in motion, and always follow local laws and road conditions.",
+            "No warranty" to "The software is provided without warranty. Compatibility can vary by Android device, vehicle firmware, and connected applications.",
+        )
+        MorePage.LICENSE -> listOf(
+            "OpenDash" to "Distributed under the license included with the source repository.",
+            "Open-source components" to "OpenDash uses Kotlin, Jetpack Compose, MapLibre, OpenFreeMap, OSRM, AndroidX, and other libraries under their respective licenses.",
+            "Source" to "github.com/subtlesayak/open-dash",
+        )
+        MorePage.CHANGELOG -> listOf(
+            "1.3 stable" to "Material 3 Expressive refresh, app-wide motorcycle themes, active vehicle selection, redesigned Garage, spare-part service logging, safer fuel entry handling, month-aware expense sharing, capped dash wallpaper video decoding, and smoother navigation.",
+            "Protocol safety" to "Dash handshake, authentication, RTP, UDP, and protocol packet behavior remain unchanged.",
+        )
+        else -> emptyList()
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .verticalScroll(rememberScrollState())
+            .padding(18.dp)
+            .padding(bottom = 24.dp),
+    ) {
+        ScreenHeader(title = page.title, onBack = onBack)
+        sections.forEach { (title, body) ->
+            SettingsGroup(modifier = Modifier.padding(bottom = 12.dp), padding = 16.dp) {
+                Text(title, color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, fontFamily = GeistFamily)
+                Text(body, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp, modifier = Modifier.padding(top = 6.dp))
+            }
+        }
+    }
 }
 
 @Composable
@@ -773,7 +861,7 @@ private fun DashCropPreview(
     Canvas(
         modifier = modifier
             .aspectRatio(526f / 300f)
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RoundedCornerShape(20.dp))
             .background(Bg0),
     ) {
         if (fit == DashWallpaperFit.CROP) {

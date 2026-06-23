@@ -72,7 +72,7 @@ Google-Maps-styled map streamed to the dash.
 - [x] **Streamed dash restyled to Google-Maps look.** `TileProvider` no longer
   inverts tiles to dark — uses standard light map tiles (also the cheapest path);
   `MapRenderer` background + standby text adjusted for the light look.
-- [ ] **ADD YOUR MAPS API KEY** to `local.properties` → `MAPS_API_KEY=AIza…`.
+- [ ] **ADD YOUR MAPS API KEY** to `local.properties` using a private value for `MAPS_API_KEY`.
   In Google Cloud (same project as Firebase): enable **Maps SDK for Android**,
   create an API key, restrict to package `com.opendash.app` + SHA-1
   `80:30:BD:71:…:2D:C8`. Native map display is free/unlimited (billing must be

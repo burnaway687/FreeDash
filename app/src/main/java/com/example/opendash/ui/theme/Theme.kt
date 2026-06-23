@@ -3,6 +3,10 @@ package com.example.opendash.ui.theme
 import android.content.Context
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.MaterialExpressiveTheme
+import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -10,6 +14,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
@@ -19,13 +24,31 @@ data class OpenDashThemeVariant(
     val colors: List<Color>,
 ) {
     val background: Color get() = colors[0]
-    val surfaceLow: Color get() = colors[1]
-    val surface: Color get() = colors[1]
-    val surfaceHigh: Color get() = colors[2]
-    val text: Color get() = colors[5]
-    val textMid: Color get() = colors[4]
-    val accent: Color get() = colors[3]
-    val accentStrong: Color get() = colors[4]
+    val text: Color get() = when (name) {
+        "Kamet White" -> colors[4]
+        "Slate Himalayan Salt", "Slate Poppy Blue" -> colors[3]
+        "Kaza Brown" -> colors[4]
+        else -> colors[5]
+    }
+    val textMid: Color get() = when (name) {
+        "Kamet White" -> colors[3]
+        "Slate Himalayan Salt", "Slate Poppy Blue" -> colors[2]
+        "Kaza Brown" -> colors[3]
+        else -> lerp(background, text, 0.68f)
+    }
+    val surfaceLow: Color get() = lerp(background, text, 0.055f)
+    val surface: Color get() = lerp(background, text, 0.095f)
+    val surfaceHigh: Color get() = lerp(background, text, 0.15f)
+    val accent: Color get() = when (name) {
+        "Slate Himalayan Salt", "Slate Poppy Blue" -> colors[4]
+        "Kamet White" -> colors[3]
+        else -> colors[3]
+    }
+    val accentStrong: Color get() = when (name) {
+        "Slate Himalayan Salt", "Slate Poppy Blue" -> colors[4]
+        "Kamet White" -> colors[4]
+        else -> colors[4]
+    }
 }
 
 val OpenDashThemeVariants = listOf(
@@ -89,8 +112,8 @@ private fun openDashColorScheme(variant: OpenDashThemeVariant): ColorScheme = da
     onPrimary          = variant.background,
     primaryContainer   = variant.accent.copy(alpha = 0.28f),
     onPrimaryContainer = variant.accentStrong,
-    secondary          = TextMid,
-    onSecondary        = Bg1,
+    secondary          = variant.textMid,
+    onSecondary        = variant.background,
     tertiary           = Warn,
     onTertiary         = Bg1,
     tertiaryContainer  = Warn.copy(alpha = 0.18f),
@@ -114,9 +137,10 @@ private fun openDashColorScheme(variant: OpenDashThemeVariant): ColorScheme = da
     onError            = variant.text,
     errorContainer     = Alert.copy(alpha = 0.16f),
     onErrorContainer   = Alert,
-    scrim              = variant.background,
+    scrim              = Color.Black,
 )
 
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun OpenDashTheme(content: @Composable () -> Unit) {
     val context = LocalContext.current
@@ -125,9 +149,10 @@ fun OpenDashTheme(content: @Composable () -> Unit) {
         true
     }
     val variant by OpenDashThemeController.variant.collectAsState()
-    MaterialTheme(
+    MaterialExpressiveTheme(
         colorScheme = openDashColorScheme(variant),
         typography = Typography,
+        motionScheme = MotionScheme.expressive(),
         content = content,
     )
 }

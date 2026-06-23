@@ -2,6 +2,8 @@ package com.example.opendash.ui.navigation
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.*
@@ -13,6 +15,8 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
@@ -154,19 +158,19 @@ fun AppNavigation(
                 startDestination = Screen.Login.route,
                 enterTransition = {
                     val direction = transitionDirection(initialState.destination.route, targetState.destination.route)
-                    slideInHorizontally(tween(260)) { width -> width * direction }
+                    slideInHorizontally(tween(350)) { width -> width * direction } + fadeIn(tween(350))
                 },
                 exitTransition = {
                     val direction = transitionDirection(initialState.destination.route, targetState.destination.route)
-                    slideOutHorizontally(tween(260)) { width -> -width * direction }
+                    slideOutHorizontally(tween(200)) { width -> -(width / 4) * direction } + fadeOut(tween(200))
                 },
                 popEnterTransition = {
                     val direction = transitionDirection(targetState.destination.route, initialState.destination.route)
-                    slideInHorizontally(tween(260)) { width -> -width * direction }
+                    slideInHorizontally(tween(350)) { width -> -(width / 4) * direction } + fadeIn(tween(350))
                 },
                 popExitTransition = {
                     val direction = transitionDirection(targetState.destination.route, initialState.destination.route)
-                    slideOutHorizontally(tween(260)) { width -> width * direction }
+                    slideOutHorizontally(tween(200)) { width -> width * direction } + fadeOut(tween(200))
                 },
             ) {
                 composable(Screen.Login.route) {
@@ -296,9 +300,11 @@ private fun OpenDashBottomNav(
     NavigationBar(
         modifier = Modifier
             .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 8.dp)
+            .clip(RoundedCornerShape(28.dp))
             .navigationBarsPadding(),
-        containerColor = MaterialTheme.colorScheme.surfaceContainer,
-        tonalElevation = 3.dp,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        tonalElevation = 0.dp,
     ) {
         bottomTabs.forEach { tab ->
             val active = currentRoute == tab.screen.route

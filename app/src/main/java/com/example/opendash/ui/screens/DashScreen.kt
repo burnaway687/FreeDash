@@ -349,9 +349,9 @@ fun DashScreen(vm: DashViewModel = viewModel()) {
             horizontalArrangement = Arrangement.SpaceBetween,
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(14.dp))
+                .clip(RoundedCornerShape(20.dp))
                 .background(if (adjustMode) GoldTint else Surf1)
-                .border(1.dp, if (adjustMode) GoldTint2 else Line, RoundedCornerShape(14.dp))
+                .border(1.dp, if (adjustMode) GoldTint2 else Line, RoundedCornerShape(20.dp))
                 .padding(horizontal = 16.dp, vertical = 12.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -373,9 +373,9 @@ fun DashScreen(vm: DashViewModel = viewModel()) {
             horizontalArrangement = Arrangement.SpaceBetween,
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(14.dp))
+                .clip(RoundedCornerShape(20.dp))
                 .background(Surf1)
-                .border(1.dp, Line, RoundedCornerShape(14.dp))
+                .border(1.dp, Line, RoundedCornerShape(20.dp))
                 .padding(horizontal = 16.dp, vertical = 12.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {

@@ -95,7 +95,7 @@ private fun RideCard(ride: Ride, onDelete: () -> Unit) {
                 // Track sketch
                 Box(
                     contentAlignment = Alignment.Center,
-                    modifier = Modifier.size(64.dp).clip(RoundedCornerShape(12.dp)).background(Surf2),
+                    modifier = Modifier.size(64.dp).clip(RoundedCornerShape(20.dp)).background(Surf2),
                 ) {
                     if (track.size >= 2) TrackSketch(track, Modifier.fillMaxSize().padding(8.dp))
                     else Icon(OpenDashIcons.Route, contentDescription = null, tint = TextLo, modifier = Modifier.size(22.dp))

@@ -26,6 +26,7 @@ import com.example.opendash.ui.theme.*
 import com.example.opendash.viewmodel.ConnectionState
 import com.example.opendash.viewmodel.RidesViewModel
 import com.example.opendash.viewmodel.RouteViewModel
+import com.example.opendash.data.VehicleStore
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -39,6 +40,9 @@ fun HomeScreen(
 ) {
     val saved by routeViewModel.saved.collectAsState()
     val rides by ridesViewModel.rides.collectAsState()
+    val vehicles by VehicleStore.vehicles.collectAsState()
+    val activeVehicleId by VehicleStore.activeVehicleId.collectAsState()
+    val activeVehicle = vehicles.firstOrNull { it.id == activeVehicleId } ?: vehicles.first()
     val status = when (conn) {
         ConnectionState.Connected -> Triple("Connected", "Streaming to Tripper Dash", Gold)
         ConnectionState.Searching -> Triple("Searching…", "Looking for Tripper Dash", Warn)
@@ -108,7 +112,7 @@ fun HomeScreen(
                     Spacer(Modifier.height(12.dp))
 
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        OpenDashChip("Himalayan 450", ChipTone.Gold, icon = OpenDashIcons.Motor)
+                        OpenDashChip(activeVehicle.title, ChipTone.Gold, icon = OpenDashIcons.Motor)
                     }
                 }
             }

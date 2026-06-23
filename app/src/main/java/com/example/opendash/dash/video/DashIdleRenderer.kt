@@ -8,8 +8,17 @@ import android.graphics.Movie
 import android.graphics.Paint
 import android.graphics.Rect
 import android.media.MediaMetadataRetriever
+import android.os.SystemClock
 import com.example.opendash.data.DashWallpaperFit
 import com.example.opendash.data.DashWallpaperKind
+
+internal object DashWallpaperPlaybackPolicy {
+    const val MAX_VIDEO_FPS = 8
+    const val MIN_VIDEO_FRAME_INTERVAL_MS = 1_000L / MAX_VIDEO_FPS
+
+    fun shouldDecodeVideoFrame(lastDecodeAtMs: Long, nowMs: Long): Boolean =
+        lastDecodeAtMs == 0L || nowMs - lastDecodeAtMs >= MIN_VIDEO_FRAME_INTERVAL_MS
+}
 
 class DashIdleRenderer {
     private val bgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(13, 15, 16) }
@@ -20,6 +29,7 @@ class DashIdleRenderer {
     private var cachedMovie: Movie? = null
     private var cachedRetriever: MediaMetadataRetriever? = null
     private var cachedVideoDurationMs: Long = 0L
+    private var lastVideoFrameDecodeAtMs: Long = 0L
 
     fun draw(
         canvas: Canvas,
@@ -43,6 +53,8 @@ class DashIdleRenderer {
         cachedMovie = null
         cachedRetriever?.release()
         cachedRetriever = null
+        cachedVideoDurationMs = 0L
+        lastVideoFrameDecodeAtMs = 0L
         cachedPath = null
         cachedKind = null
     }
@@ -93,12 +105,20 @@ class DashIdleRenderer {
                 ?: 1000L
         }
         val retriever = cachedRetriever ?: return
-        val timeUs = (System.currentTimeMillis() % cachedVideoDurationMs) * 1000L
-        val frame = runCatching {
-            retriever.getFrameAtTime(timeUs, MediaMetadataRetriever.OPTION_CLOSEST)
-        }.getOrNull() ?: return
-        drawBitmap(canvas, frame, horizontalBias, verticalBias, fit)
-        frame.recycle()
+        val nowMs = SystemClock.elapsedRealtime()
+        if (DashWallpaperPlaybackPolicy.shouldDecodeVideoFrame(lastVideoFrameDecodeAtMs, nowMs)) {
+            lastVideoFrameDecodeAtMs = nowMs
+            val timeUs = (System.currentTimeMillis() % cachedVideoDurationMs) * 1000L
+            runCatching {
+                retriever.getFrameAtTime(timeUs, MediaMetadataRetriever.OPTION_CLOSEST)
+            }.getOrNull()?.let { frame ->
+                cachedBitmap?.recycle()
+                cachedBitmap = frame
+            }
+        }
+        cachedBitmap?.takeIf { !it.isRecycled }?.let {
+            drawBitmap(canvas, it, horizontalBias, verticalBias, fit)
+        }
     }
 
     private fun drawBitmap(canvas: Canvas, bitmap: Bitmap, horizontalBias: Float, verticalBias: Float, fit: DashWallpaperFit) {
@@ -175,5 +195,6 @@ class DashIdleRenderer {
         cachedRetriever?.release()
         cachedRetriever = null
         cachedVideoDurationMs = 0L
+        lastVideoFrameDecodeAtMs = 0L
     }
 }

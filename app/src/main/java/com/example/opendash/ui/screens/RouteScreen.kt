@@ -140,7 +140,7 @@ fun RouteScreen(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
                         .size(44.dp)
-                        .clip(RoundedCornerShape(12.dp))
+                        .clip(RoundedCornerShape(16.dp))
                         .background(GoldTint),
                 ) {
                     Icon(OpenDashIcons.LocationPin, contentDescription = null, tint = Gold, modifier = Modifier.size(22.dp))
@@ -172,9 +172,9 @@ fun RouteScreen(
                     Column(
                         modifier = Modifier
                             .weight(1f)
-                            .clip(RoundedCornerShape(14.dp))
+                            .clip(RoundedCornerShape(20.dp))
                             .background(Surf1)
-                            .border(1.dp, Line, RoundedCornerShape(14.dp))
+                            .border(1.dp, Line, RoundedCornerShape(20.dp))
                             .padding(13.dp),
                     ) {
                         Row(verticalAlignment = Alignment.Bottom) {
@@ -255,7 +255,7 @@ fun RouteScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
+                                .clip(RoundedCornerShape(16.dp))
                                 .clickable { routeViewModel.selectSaved(loc) }
                                 .padding(horizontal = 6.dp, vertical = 12.dp),
                         ) {

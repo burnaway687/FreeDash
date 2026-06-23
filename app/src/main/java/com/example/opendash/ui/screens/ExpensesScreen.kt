@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -22,7 +23,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -54,15 +58,10 @@ import com.example.opendash.ui.components.OpenDashDivider
 import com.example.opendash.ui.components.ScreenHeader
 import com.example.opendash.ui.theme.GeistFamily
 import com.example.opendash.ui.theme.GeistMonoFamily
-import com.example.opendash.ui.theme.Gold
-import com.example.opendash.ui.theme.Line
-import com.example.opendash.ui.theme.Surf2
-import com.example.opendash.ui.theme.TextHi
-import com.example.opendash.ui.theme.TextLo
-import com.example.opendash.ui.theme.TextMid
 import com.example.opendash.viewmodel.GarageViewModel
 import java.io.File
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import kotlinx.coroutines.launch
@@ -73,10 +72,13 @@ fun ExpensesScreen(vm: GarageViewModel = viewModel()) {
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     var selected by remember { mutableStateOf("All Expenses") }
+    val periods = remember { expensePeriods() }
+    var selectedPeriod by remember { mutableStateOf(periods.first()) }
     var showAdd by remember { mutableStateOf(false) }
     var showShare by remember { mutableStateOf(false) }
     val categories = listOf("All Expenses", "Fuel", "Repairs", "Accessories", "Riding Gear", "Food", "Stay", "Transport", "Others")
-    val shown = if (selected == "All Expenses") ui.expenses else ui.expenses.filter { it.category == selected }
+    val periodExpenses = ui.expenses.filter { selectedPeriod.includes(it.dateMs) }
+    val shown = if (selected == "All Expenses") periodExpenses else periodExpenses.filter { it.category == selected }
     val total = shown.sumOf { it.amount }
 
     Box(Modifier.fillMaxSize()) {
@@ -90,18 +92,24 @@ fun ExpensesScreen(vm: GarageViewModel = viewModel()) {
             ScreenHeader(title = "My Expenses")
 
             OpenDashCard(modifier = Modifier.fillMaxWidth(), padding = 16.dp) {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column {
-                        Text("Total", color = TextLo, fontSize = 12.sp)
-                        Text("₹${"%,.0f".format(total)}", color = Gold, fontSize = 30.sp, fontWeight = FontWeight.SemiBold, fontFamily = GeistMonoFamily)
+                        Text("Total", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+                        Text("₹${"%,.0f".format(total)}", color = MaterialTheme.colorScheme.primary, fontSize = 30.sp, fontWeight = FontWeight.SemiBold, fontFamily = GeistMonoFamily)
                     }
+                    ExpensePeriodSelector(
+                        periods = periods,
+                        selected = selectedPeriod,
+                        onSelect = { selectedPeriod = it },
+                        modifier = Modifier.weight(1f),
+                    )
                     OpenDashBtn(
                         "Share",
                         onClick = { showShare = true },
                         icon = OpenDashIcons.Share,
                         variant = BtnVariant.Ghost,
                         size = BtnSize.Sm,
-                        enabled = ui.expenses.isNotEmpty(),
+                        enabled = shown.isNotEmpty(),
                     )
                 }
             }
@@ -125,11 +133,11 @@ fun ExpensesScreen(vm: GarageViewModel = viewModel()) {
 
             OpenDashCard(modifier = Modifier.fillMaxWidth(), padding = 6.dp) {
                 if (shown.isEmpty()) {
-                    Text("No expenses in this category yet.", color = TextLo, fontSize = 13.sp, modifier = Modifier.padding(14.dp))
+                    Text("No expenses for this category and period.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp, modifier = Modifier.padding(14.dp))
                 }
                 shown.forEachIndexed { i, expense ->
                     if (i > 0) OpenDashDivider(Modifier.padding(horizontal = 4.dp))
-                    ExpenseListRow(expense, onDelete = { vm.deleteExpense(expense) })
+                    ExpenseListRow(expense)
                 }
             }
         }
@@ -149,18 +157,20 @@ fun ExpensesScreen(vm: GarageViewModel = viewModel()) {
     }
 
     if (showAdd) AddExpenseScreenDialog(
-        onAdd = { category, amount, note -> vm.addExpense(category, amount, note); showAdd = false },
+        vehicleName = ui.activeVehicleName,
+        onAdd = { category, amount, note, dateMs -> vm.addExpense(category, amount, note, dateMs); showAdd = false },
         onDismiss = { showAdd = false },
     )
     if (showShare) ExpenseExportSheet(
+        periodLabel = selectedPeriod.label,
         onDismiss = { showShare = false },
         onExcel = {
             showShare = false
-            scope.launch { shareExpenseFile(ctx, vm.exportExpensesCsv(), "text/csv") }
+            scope.launch { shareExpenseFile(ctx, vm.exportExpensesCsv(shown, selectedPeriod.fileLabel), "text/csv") }
         },
         onDoc = {
             showShare = false
-            scope.launch { shareExpenseFile(ctx, vm.exportExpensesDoc(), "application/msword") }
+            scope.launch { shareExpenseFile(ctx, vm.exportExpensesDoc(shown, selectedPeriod.label), "application/msword") }
         },
     )
 }
@@ -171,42 +181,46 @@ private fun ExpenseFilterChip(label: String, selected: Boolean, color: Color, on
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .clip(CircleShape)
-            .background(if (selected) Surf2 else Color.Transparent)
-            .border(1.dp, if (selected) TextHi else Line, CircleShape)
+            .background(if (selected) MaterialTheme.colorScheme.surfaceContainerHigh else Color.Transparent)
+            .border(1.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant, CircleShape)
             .clickable(onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 9.dp),
     ) {
-        Box(Modifier.size(12.dp).clip(CircleShape).background(if (label == "All Expenses") TextHi else color))
+        Box(Modifier.size(12.dp).clip(CircleShape).background(if (label == "All Expenses") MaterialTheme.colorScheme.onSurface else color))
         Spacer(Modifier.width(8.dp))
-        Text(label, color = if (selected) TextHi else TextMid, fontSize = 14.sp, fontFamily = GeistFamily)
+        Text(label, color = if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp, fontFamily = GeistFamily)
     }
 }
 
 @Composable
-private fun ExpenseListRow(expense: Expense, onDelete: () -> Unit) {
+private fun ExpenseListRow(expense: Expense) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onDelete).padding(horizontal = 8.dp, vertical = 14.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 14.dp),
     ) {
         Column(Modifier.weight(1f)) {
-            Text(expense.category, color = TextHi, fontSize = 16.sp, fontFamily = GeistFamily)
-            Text(expense.note.ifBlank { dfExpense.format(Date(expense.dateMs)) }, color = TextLo, fontSize = 12.5.sp, modifier = Modifier.padding(top = 3.dp), maxLines = 1)
+            Text(expense.category, color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp, fontFamily = GeistFamily)
+            Text(expense.note.ifBlank { dfExpense.format(Date(expense.dateMs)) }, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.5.sp, modifier = Modifier.padding(top = 3.dp), maxLines = 1)
         }
         Column(horizontalAlignment = Alignment.End) {
-            Text("₹${"%,.0f".format(expense.amount)}", color = TextHi, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, fontFamily = GeistMonoFamily)
-            Text(dfExpense.format(Date(expense.dateMs)), color = TextLo, fontSize = 11.5.sp, modifier = Modifier.padding(top = 3.dp))
+            Text("₹${"%,.0f".format(expense.amount)}", color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, fontFamily = GeistMonoFamily)
+            Text(dfExpense.format(Date(expense.dateMs)), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.5.sp, modifier = Modifier.padding(top = 3.dp))
         }
     }
 }
 
 @Composable
-private fun AddExpenseScreenDialog(onAdd: (String, Double, String) -> Unit, onDismiss: () -> Unit) {
+private fun AddExpenseScreenDialog(
+    vehicleName: String,
+    onAdd: (String, Double, String, Long) -> Unit,
+    onDismiss: () -> Unit,
+) {
     val categories = listOf("Fuel", "Repairs", "Accessories", "Riding Gear", "Food", "Stay", "Transport", "Others")
     var category by remember { mutableStateOf(categories.first()) }
     var date by remember { mutableStateOf(dfExpense.format(Date())) }
     var time by remember { mutableStateOf(dfExpenseTime.format(Date())) }
     var amount by remember { mutableStateOf("") }
-    var vehicle by remember { mutableStateOf("Himalayan 450") }
+    var vehicle by remember(vehicleName) { mutableStateOf(vehicleName) }
     var odometer by remember { mutableStateOf("") }
     var fuelQty by remember { mutableStateOf("") }
     var fullTank by remember { mutableStateOf(false) }
@@ -217,6 +231,9 @@ private fun AddExpenseScreenDialog(onAdd: (String, Double, String) -> Unit, onDi
     val valid = amount.toDoubleOrNull()?.let { it > 0.0 } == true
     AlertDialog(
         onDismissRequest = onDismiss,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        titleContentColor = MaterialTheme.colorScheme.onSurface,
+        textContentColor = MaterialTheme.colorScheme.onSurface,
         confirmButton = {
             TextButton(
                 enabled = valid,
@@ -237,14 +254,15 @@ private fun AddExpenseScreenDialog(onAdd: (String, Double, String) -> Unit, onDi
                             description = description,
                             partsReplaced = partsReplaced,
                         ),
+                        parseExpenseDateTime(date, time) ?: System.currentTimeMillis(),
                     )
                 },
             ) {
-                Text("Add", color = if (valid) Gold else TextLo)
+                Text("Add", color = if (valid) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
             }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel", color = TextMid) } },
-        title = { Text("${category} expense", color = TextHi) },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant) } },
+        title = { Text("${category} expense") },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
@@ -291,7 +309,7 @@ private fun AddExpenseScreenDialog(onAdd: (String, Double, String) -> Unit, onDi
                         else -> "Shop / establishment name (optional)"
                     }
                     if (category == "Repairs") {
-                        Text("Did you replace any parts?", color = TextHi, fontSize = 14.sp, modifier = Modifier.padding(top = 12.dp))
+                        Text("Did you replace any parts?", color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp, modifier = Modifier.padding(top = 12.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
                             OpenDashBtn("Yes", onClick = { partsReplaced = true }, icon = OpenDashIcons.Check, variant = if (partsReplaced) BtnVariant.Primary else BtnVariant.Secondary, size = BtnSize.Sm, modifier = Modifier.weight(1f))
                             OpenDashBtn("No", onClick = { partsReplaced = false }, icon = OpenDashIcons.Check, variant = if (!partsReplaced) BtnVariant.Primary else BtnVariant.Secondary, size = BtnSize.Sm, modifier = Modifier.weight(1f))
@@ -313,7 +331,7 @@ private fun AddExpenseScreenDialog(onAdd: (String, Double, String) -> Unit, onDi
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                     minLines = 2,
                 )
-                Text("${description.length}/500", color = TextLo, fontSize = 11.sp, modifier = Modifier.align(Alignment.End).padding(top = 2.dp))
+                Text("${description.length}/500", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp, modifier = Modifier.align(Alignment.End).padding(top = 2.dp))
                 OpenDashBtn(
                     "Attach bill",
                     onClick = { },
@@ -330,18 +348,26 @@ private fun AddExpenseScreenDialog(onAdd: (String, Double, String) -> Unit, onDi
 private val dfExpense = SimpleDateFormat("d-MMM-yyyy", Locale.getDefault())
 private val dfExpenseTime = SimpleDateFormat("hh:mm a", Locale.getDefault())
 
+private fun parseExpenseDateTime(date: String, time: String): Long? =
+    runCatching {
+        SimpleDateFormat("d-MMM-yyyy hh:mm a", Locale.getDefault()).apply { isLenient = false }
+            .parse("${date.trim()} ${time.trim()}")
+            ?.time
+    }.getOrNull()
+
 @Composable
-private fun ExpenseExportSheet(onDismiss: () -> Unit, onExcel: () -> Unit, onDoc: () -> Unit) {
+private fun ExpenseExportSheet(periodLabel: String, onDismiss: () -> Unit, onExcel: () -> Unit, onDoc: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Export expenses", color = TextHi) },
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        title = { Text("Export $periodLabel", color = MaterialTheme.colorScheme.onSurface) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
                 OpenDashBtn("Excel / CSV", onClick = onExcel, icon = OpenDashIcons.Chart, variant = BtnVariant.Secondary, size = BtnSize.Md, modifier = Modifier.fillMaxWidth())
                 OpenDashBtn("Document", onClick = onDoc, icon = OpenDashIcons.Share, variant = BtnVariant.Secondary, size = BtnSize.Md, modifier = Modifier.fillMaxWidth())
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Close", color = TextMid) } },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Close", color = MaterialTheme.colorScheme.onSurfaceVariant) } },
     )
 }
 
@@ -389,15 +415,85 @@ private fun buildExpenseNote(
     if (description.isNotBlank()) add(description.trim())
 }.joinToString(" · ")
 
+@Composable
 private fun categoryColor(category: String): Color = when (category) {
-    "Fuel" -> Gold
+    "Fuel" -> MaterialTheme.colorScheme.primary
     "Repairs" -> Color(0xFFB95A68)
     "Accessories" -> Color(0xFF7EA7C8)
     "Riding Gear" -> Color(0xFFA88FD8)
     "Food" -> Color(0xFFE2A85C)
     "Stay" -> Color(0xFF89B985)
     "Transport" -> Color(0xFF9BB3D9)
-    else -> TextMid
+    else -> MaterialTheme.colorScheme.onSurfaceVariant
+}
+
+private data class ExpensePeriod(
+    val label: String,
+    val startMs: Long? = null,
+    val endMs: Long? = null,
+) {
+    val fileLabel: String get() = label.lowercase(Locale.US).replace(' ', '-')
+    fun includes(timestamp: Long): Boolean =
+        (startMs == null || timestamp >= startMs) && (endMs == null || timestamp < endMs)
+}
+
+private fun expensePeriods(): List<ExpensePeriod> {
+    val now = Calendar.getInstance()
+    val year = now.get(Calendar.YEAR)
+    val monthFormat = SimpleDateFormat("MMMM", Locale.getDefault())
+    return listOf(ExpensePeriod("All time")) + (0..11).map { month ->
+        val start = Calendar.getInstance().apply {
+            clear()
+            set(year, month, 1, 0, 0, 0)
+        }
+        val end = (start.clone() as Calendar).apply { add(Calendar.MONTH, 1) }
+        ExpensePeriod("${monthFormat.format(start.time)} $year", start.timeInMillis, end.timeInMillis)
+    }
+}
+
+@Composable
+private fun ExpensePeriodSelector(
+    periods: List<ExpensePeriod>,
+    selected: ExpensePeriod,
+    onSelect: (ExpensePeriod) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Box(modifier) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp))
+                .clickable { expanded = true }
+                .padding(horizontal = 9.dp, vertical = 9.dp),
+        ) {
+            Icon(OpenDashIcons.Cal, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(17.dp))
+            Spacer(Modifier.width(6.dp))
+            Text(selected.label, color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp, maxLines = 1)
+        }
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            modifier = Modifier.heightIn(max = 320.dp),
+        ) {
+            periods.forEach { period ->
+                DropdownMenuItem(
+                    text = { Text(period.label, color = MaterialTheme.colorScheme.onSurface) },
+                    onClick = {
+                        onSelect(period)
+                        expanded = false
+                    },
+                    trailingIcon = if (period == selected) {
+                        { Icon(OpenDashIcons.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary) }
+                    } else null,
+                )
+            }
+        }
+    }
 }
 
 private fun shareExpenseFile(context: android.content.Context, file: File, mimeType: String) {
