@@ -8,8 +8,10 @@ import com.example.opendash.data.FuelFillup
 import com.example.opendash.data.Himalayan450MaintenanceSchedule
 import com.example.opendash.data.MaintenanceItem
 import com.example.opendash.data.OfficialMaintenanceSchedule
+import com.example.opendash.data.OpenDashCurrency
 import com.example.opendash.data.SyncRepository
 import com.example.opendash.data.VehicleStore
+import com.example.opendash.data.formatCurrencyAmount
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -152,11 +154,15 @@ class GarageViewModel(app: Application) : AndroidViewModel(app) {
     fun setOdometer(km: Int) =
         viewModelScope.launch { withContext(Dispatchers.IO) { repo.setOdometer(km) } }
 
-    suspend fun exportExpensesCsv(expenses: List<Expense>? = null, periodLabel: String = "all-time"): File = withContext(Dispatchers.IO) {
+    suspend fun exportExpensesCsv(
+        expenses: List<Expense>? = null,
+        periodLabel: String = "all-time",
+        currency: OpenDashCurrency = OpenDashCurrency.INR,
+    ): File = withContext(Dispatchers.IO) {
         val selected = expenses ?: repo.expenses()
         val file = exportFile("opendash-expenses-$periodLabel.csv")
         file.writeText(buildString {
-            appendLine("Date,Category,Amount,Note")
+            appendLine("Date,Category,Amount_${currency.code},Note")
             selected.forEach { e ->
                 appendLine(
                     listOf(
@@ -171,18 +177,22 @@ class GarageViewModel(app: Application) : AndroidViewModel(app) {
         file
     }
 
-    suspend fun exportExpensesDoc(expenses: List<Expense>? = null, periodLabel: String = "All time"): File = withContext(Dispatchers.IO) {
+    suspend fun exportExpensesDoc(
+        expenses: List<Expense>? = null,
+        periodLabel: String = "All time",
+        currency: OpenDashCurrency = OpenDashCurrency.INR,
+    ): File = withContext(Dispatchers.IO) {
         val selected = expenses ?: repo.expenses()
         val file = exportFile("opendash-expenses-${periodLabel.lowercase(Locale.US).replace(' ', '-')}.doc")
         file.writeText(
             buildString {
                 appendLine("<html><head><meta charset=\"utf-8\"><title>OpenDash Expenses</title></head><body>")
                 appendLine("<h1>OpenDash Expenses - ${html(periodLabel)}</h1>")
-                appendLine("<p>Total: ₹${"%,.2f".format(selected.sumOf { it.amount })}</p>")
+                appendLine("<p>Total: ${html(formatCurrencyAmount(selected.sumOf { it.amount }, currency, 2))}</p>")
                 appendLine("<table border=\"1\" cellspacing=\"0\" cellpadding=\"6\">")
                 appendLine("<tr><th>Date</th><th>Category</th><th>Amount</th><th>Note</th></tr>")
                 selected.forEach { e ->
-                    appendLine("<tr><td>${exportDate(e.dateMs)}</td><td>${html(e.category)}</td><td>₹${"%,.2f".format(e.amount)}</td><td>${html(e.note)}</td></tr>")
+                    appendLine("<tr><td>${exportDate(e.dateMs)}</td><td>${html(e.category)}</td><td>${html(formatCurrencyAmount(e.amount, currency, 2))}</td><td>${html(e.note)}</td></tr>")
                 }
                 appendLine("</table></body></html>")
             }

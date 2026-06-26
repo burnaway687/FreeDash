@@ -218,7 +218,9 @@ class DashViewModel(app: Application) : AndroidViewModel(app) {
                             if (userWantsConnection &&
                                 wifiManager.state.value.status == WifiConnStatus.CONNECTED &&
                                 _ui.value.pendingPairingSsid == null
-                            ) session.connect(_ui.value.ssid, wifiManager.network)
+                            ) {
+                                connectSessionWhenSsidResolved()
+                            }
                         }
                     }
                     WifiConnStatus.ERROR -> { _ui.value = _ui.value.copy(errorMessage = ws.error); refreshStage() }
@@ -320,7 +322,7 @@ class DashViewModel(app: Application) : AndroidViewModel(app) {
 
         when {
             wifiManager.state.value.status == WifiConnStatus.CONNECTED ->
-                session.connect(_ui.value.ssid, wifiManager.network)
+                connectSessionWhenSsidResolved()
             // Known SSID (stored or just found by scan) → exact connect + correct auth.
             dashConfig.ssid.isNotBlank() ->
                 wifiManager.connect(dashConfig.ssid, dashConfig.password)
@@ -378,7 +380,7 @@ class DashViewModel(app: Application) : AndroidViewModel(app) {
         _ui.value = _ui.value.copy(ssid = ssid, pendingPairingSsid = null, errorMessage = null)
         if (!userWantsConnection) return
         when (wifiManager.state.value.status) {
-            WifiConnStatus.CONNECTED -> session.connect(ssid, wifiManager.network)
+            WifiConnStatus.CONNECTED -> connectSessionWhenSsidResolved()
             else -> wifiManager.connect(ssid, dashConfig.password)
         }
     }
@@ -406,6 +408,15 @@ class DashViewModel(app: Application) : AndroidViewModel(app) {
             pendingPairingSsid = ssid,
             errorMessage = null,
         )
+    }
+
+    private fun connectSessionWhenSsidResolved() {
+        val ssid = _ui.value.ssid.trim()
+        if (ssid.isBlank() || ssid == dashConfig.ssidPrefix) {
+            DebugLog.w("DashViewModel") { "Session connect deferred until exact dash SSID is resolved" }
+            return
+        }
+        session.connect(ssid, wifiManager.network)
     }
 
     fun setWallpaperFromUri(

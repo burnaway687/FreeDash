@@ -48,7 +48,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.opendash.data.CurrencySettings
 import com.example.opendash.data.Expense
+import com.example.opendash.data.OpenDashCurrency
+import com.example.opendash.data.formatCurrencyAmount
 import com.example.opendash.ui.OpenDashIcons
 import com.example.opendash.ui.components.BtnSize
 import com.example.opendash.ui.components.BtnVariant
@@ -70,6 +73,11 @@ import kotlinx.coroutines.launch
 fun ExpensesScreen(vm: GarageViewModel = viewModel()) {
     val ui by vm.ui.collectAsState()
     val ctx = LocalContext.current
+    remember(ctx) {
+        CurrencySettings.init(ctx)
+        true
+    }
+    val currency by CurrencySettings.currency.collectAsState()
     val scope = rememberCoroutineScope()
     var selected by remember { mutableStateOf("All Expenses") }
     val periods = remember { expensePeriods() }
@@ -95,7 +103,7 @@ fun ExpensesScreen(vm: GarageViewModel = viewModel()) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column {
                         Text("Total", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
-                        Text("₹${"%,.0f".format(total)}", color = MaterialTheme.colorScheme.primary, fontSize = 30.sp, fontWeight = FontWeight.SemiBold, fontFamily = GeistMonoFamily)
+                        Text(formatCurrencyAmount(total, currency), color = MaterialTheme.colorScheme.primary, fontSize = 30.sp, fontWeight = FontWeight.SemiBold, fontFamily = GeistMonoFamily)
                     }
                     ExpensePeriodSelector(
                         periods = periods,
@@ -137,7 +145,7 @@ fun ExpensesScreen(vm: GarageViewModel = viewModel()) {
                 }
                 shown.forEachIndexed { i, expense ->
                     if (i > 0) OpenDashDivider(Modifier.padding(horizontal = 4.dp))
-                    ExpenseListRow(expense)
+                    ExpenseListRow(expense, currency)
                 }
             }
         }
@@ -158,6 +166,7 @@ fun ExpensesScreen(vm: GarageViewModel = viewModel()) {
 
     if (showAdd) AddExpenseScreenDialog(
         vehicleName = ui.activeVehicleName,
+        currency = currency,
         onAdd = { category, amount, note, dateMs -> vm.addExpense(category, amount, note, dateMs); showAdd = false },
         onDismiss = { showAdd = false },
     )
@@ -166,11 +175,11 @@ fun ExpensesScreen(vm: GarageViewModel = viewModel()) {
         onDismiss = { showShare = false },
         onExcel = {
             showShare = false
-            scope.launch { shareExpenseFile(ctx, vm.exportExpensesCsv(shown, selectedPeriod.fileLabel), "text/csv") }
+            scope.launch { shareExpenseFile(ctx, vm.exportExpensesCsv(shown, selectedPeriod.fileLabel, currency), "text/csv") }
         },
         onDoc = {
             showShare = false
-            scope.launch { shareExpenseFile(ctx, vm.exportExpensesDoc(shown, selectedPeriod.label), "application/msword") }
+            scope.launch { shareExpenseFile(ctx, vm.exportExpensesDoc(shown, selectedPeriod.label, currency), "application/msword") }
         },
     )
 }
@@ -193,7 +202,7 @@ private fun ExpenseFilterChip(label: String, selected: Boolean, color: Color, on
 }
 
 @Composable
-private fun ExpenseListRow(expense: Expense) {
+private fun ExpenseListRow(expense: Expense, currency: OpenDashCurrency) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 14.dp),
@@ -203,7 +212,7 @@ private fun ExpenseListRow(expense: Expense) {
             Text(expense.note.ifBlank { dfExpense.format(Date(expense.dateMs)) }, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.5.sp, modifier = Modifier.padding(top = 3.dp), maxLines = 1)
         }
         Column(horizontalAlignment = Alignment.End) {
-            Text("₹${"%,.0f".format(expense.amount)}", color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, fontFamily = GeistMonoFamily)
+            Text(formatCurrencyAmount(expense.amount, currency), color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, fontFamily = GeistMonoFamily)
             Text(dfExpense.format(Date(expense.dateMs)), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.5.sp, modifier = Modifier.padding(top = 3.dp))
         }
     }
@@ -212,6 +221,7 @@ private fun ExpenseListRow(expense: Expense) {
 @Composable
 private fun AddExpenseScreenDialog(
     vehicleName: String,
+    currency: OpenDashCurrency,
     onAdd: (String, Double, String, Long) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -334,7 +344,7 @@ private fun AddExpenseScreenDialog(
                     }
                 }
 
-                ExpenseField(amount, { amount = it }, "Amount (₹)", keyboardType = KeyboardType.Decimal)
+                ExpenseField(amount, { amount = it }, "Amount (${currency.symbol})", keyboardType = KeyboardType.Decimal)
                 OutlinedTextField(
                     value = description,
                     onValueChange = { description = it.take(500) },

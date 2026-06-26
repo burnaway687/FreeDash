@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.3.1
+
+- Added a currency selector in Settings for expense display and exports.
+- Added Android 11 / ColorOS Wi-Fi fallback for dash pairing when the system network dialog or SSID callback is unreliable.
+- Prevented dash authentication from starting with an unresolved prefix-only SSID.
+- Masked SSIDs in connection diagnostics.
+- Kept dash handshake, authentication packet format, socket ports, RTP, H.264, and UDP behavior unchanged.
+
 ## 1.3
 
 - Material 3 Expressive UI refresh across the app.

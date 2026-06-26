@@ -40,8 +40,8 @@ android {
         applicationId = "com.opendash.app"
         minSdk = 24
         targetSdk = 36
-        versionCode = 15
-        versionName = "1.3"
+        versionCode = 16
+        versionName = "1.3.1"
 
         buildConfigField(
             "String",

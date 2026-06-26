@@ -63,6 +63,8 @@ import com.example.opendash.ui.theme.*
 import com.example.opendash.data.DashWallpaperFit
 import com.example.opendash.data.DashWallpaperKind
 import com.example.opendash.data.DashWallpaperPaths
+import com.example.opendash.data.CurrencySettings
+import com.example.opendash.data.OpenDashCurrency
 import com.example.opendash.viewmodel.AuthViewModel
 import com.example.opendash.viewmodel.ConnectionState
 import com.example.opendash.viewmodel.DashViewModel
@@ -122,7 +124,13 @@ fun SettingsScreen(
         ActivityResultContracts.RequestPermission(),
     ) { callAccessGranted = it }
     val selectedTheme by OpenDashThemeController.variant.collectAsState()
+    remember(ctx) {
+        CurrencySettings.init(ctx)
+        true
+    }
+    val selectedCurrency by CurrencySettings.currency.collectAsState()
     var themeMenuExpanded by remember { mutableStateOf(false) }
+    var currencyMenuExpanded by remember { mutableStateOf(false) }
     var pendingWallpaperUri by remember { mutableStateOf<Uri?>(null) }
     var pendingWallpaperPreview by remember { mutableStateOf<androidx.compose.ui.graphics.ImageBitmap?>(null) }
     var cropX by remember { mutableFloatStateOf(0f) }
@@ -614,6 +622,60 @@ fun SettingsScreen(
         SectionLabel("Units")
         SettingsGroup(padding = 14.dp) {
             OpenDashSegmented(listOf("Kilometres", "Miles"), units, { units = it }, Modifier.fillMaxWidth())
+        }
+
+        SectionLabel("Currency")
+        SettingsGroup(padding = 6.dp) {
+            Box(Modifier.fillMaxWidth()) {
+                SettingRow(
+                    icon = OpenDashIcons.Chart,
+                    title = selectedCurrency.code,
+                    sub = "${selectedCurrency.displayName} · ${selectedCurrency.symbol}",
+                    control = {
+                        Icon(
+                            OpenDashIcons.ChevronRight,
+                            contentDescription = "Choose currency",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(18.dp),
+                        )
+                    },
+                    last = true,
+                    onClick = { currencyMenuExpanded = true },
+                )
+                DropdownMenu(
+                    expanded = currencyMenuExpanded,
+                    onDismissRequest = { currencyMenuExpanded = false },
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    modifier = Modifier.heightIn(max = 320.dp),
+                ) {
+                    OpenDashCurrency.entries.forEach { currency ->
+                        DropdownMenuItem(
+                            text = {
+                                Column {
+                                    Text(
+                                        currency.code,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        fontWeight = FontWeight.SemiBold,
+                                        fontFamily = GeistFamily,
+                                    )
+                                    Text(
+                                        "${currency.displayName} · ${currency.symbol}",
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        fontSize = 12.sp,
+                                    )
+                                }
+                            },
+                            trailingIcon = if (currency == selectedCurrency) {
+                                { Icon(OpenDashIcons.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary) }
+                            } else null,
+                            onClick = {
+                                CurrencySettings.select(ctx, currency)
+                                currencyMenuExpanded = false
+                            },
+                        )
+                    }
+                }
+            }
         }
 
         SectionLabel("Sync")
